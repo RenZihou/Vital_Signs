@@ -27,7 +27,7 @@ def plot(data) -> None:
     :param data: data saved as `DataFrame`
     :return: None
     """
-    names = json.load(open('./config/subtitles.json', 'r'))
+    names = json.load(open('./config/subplots.json', 'r'))
     colors = json.load(open('./config/colors.json', 'r'))
     # params: data, terms, other configs (title, color, size)
     traces: list = []  # plots' information
@@ -69,7 +69,7 @@ def plot(data) -> None:
             annotations.append({
                 'text': '<b>%s</b>' % name.upper().replace('_', ' '),
             })
-        elif plot_type[0] == 'scatter':
+        elif plot_type[0] == 'scatter':  # used only for sleep & wake time
             y_pos.append((height + plot_type[1], height))
             height += (plot_type[1] + 20)
             for each in name.split('|'):
@@ -93,7 +93,7 @@ def plot(data) -> None:
                     name.upper().split('|')[::-1]
                 ).replace('_', ' '),
             })
-        elif plot_type[0] == 'bool':  # TODO: y-axis offset
+        elif plot_type[0] == 'bool':
             y_pos.append((height + plot_type[1], height))
             height += (plot_type[1] + 20)
             traces.append(go.Bar(
@@ -110,7 +110,7 @@ def plot(data) -> None:
             annotations.append({
                 'text': '<b>%s</b>' % name.upper().replace('_', ' '),
             })
-        else:
+        elif plot_type[0] == 'space':  # add extra spaces between groups of diagrams
             y_pos.append((height, height))
             height += 20
             axes['yaxis%d' % count] = {
@@ -120,6 +120,8 @@ def plot(data) -> None:
             annotations.append({
                 'text': '',
             })
+        else:
+            count -= 1  # wrong plot type, skip
     for index, value in enumerate(y_pos):
         axes['yaxis%d' % (index + 1)]['domain'] = list(
             map(lambda x: 1 - x / height, value)
@@ -140,16 +142,20 @@ def plot(data) -> None:
         'tickfont': {'family': 'Montserrat', 'size': 10},
         'dtick': 'M1', 'tickformat': '<b>%b</b>\n%Y',
         'ticklabelmode': 'period',
+        'hoverformat': '%d, %B, %Y',
         # TODO: connect vertical grid lines
         }
 
     layout = go.Layout(
         title={'text': 'V I T A L    S I G N S',
-               'font': {'family': 'Geometos', 'size': 16},
+               'font': {
+                   'family': 'Geometos', 'size': 16, 'color': colors['title'],
+               },
                'x': 0.5, 'xanchor': 'center',
                'y': 1 - 40 / height, 'yanchor': 'middle', },
-        paper_bgcolor='#f3f3f3',
-        plot_bgcolor='#f3f3f3',
+        # TODO: add subtitles
+        paper_bgcolor=colors['background'],
+        plot_bgcolor=colors['background'],
         autosize=False,
         width=data.shape[0] * 5 + 230,
         height=height + 150,

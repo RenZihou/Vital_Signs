@@ -4,9 +4,8 @@
 import json
 from re import search
 from datetime import timedelta, datetime
-import pandas as pd
 
-# 保证是完整的天（有早有晚）
+import pandas as pd
 
 
 def data_process(df):
@@ -32,7 +31,6 @@ def data_process(df):
         del df[name]
 
     # reformat report time
-    # (the go-to-bed time might be recorded as the next day)
     # represent the time in minutes (for later use: wake-up & sleep time)
     def time_to_minute(
             t: str,
@@ -87,12 +85,6 @@ def data_process(df):
         .apply(lambda x: 1440 - int(search(r'.*\|(.*)', x).groups()[0]))
     new_df['Sleep_duration'] = new_df[['Wake', 'Sleep']].apply(duration, axis=1)
     del new_df['Minute']
-
-    # Represent date by `year` and `day_num`(of the year)
-    # new_df['Year'] = new_df['Date'].apply(lambda d: d[-4:])
-    # new_df['Day_num'] = new_df['Date'].apply(
-    #     lambda d: datetime.strptime(d, '%B %d, %Y').strftime('%j')
-    # )  # of the year
 
     # represent date by days from the start date
     start_date = min(new_df['Date'].apply(
