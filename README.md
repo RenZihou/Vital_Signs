@@ -122,4 +122,4 @@
 
 ## 样例 Example
 
-![](https://github.com/RenZihou/Vital_Signs/blob/master/example/example.png)
+![](https://github.com/RenZihou/Vital_Signs/blob/master/example/vital_signs.png)
