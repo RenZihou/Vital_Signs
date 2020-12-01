@@ -11,20 +11,17 @@ import pandas as pd
 def data_process(df):
     # delete unwanted columns
     data_types = json.load(open('./config/types.json', 'r'))
+    map_table = json.load(open('./config/mapping_table.json', 'r'))
+    tokens_ = json.load(open('./config/tokens.json', 'r'))
     df = df.drop(labels=data_types['Discard'], axis=1)
-
     df.rename(
         columns={'Timestamp of Report (Local Time)': 'Time'}, inplace=True
     )
-
     # map strings into integers
-    map_table = json.load(open('./config/mapping_table.json', 'r'))
     for name, table in map_table.items():
         for text, value in table.items():
             df.loc[df[name] == text, name] = value
-
     # split tokens
-    tokens_ = json.load(open('./config/tokens.json', 'r'))
     for name, tokens in tokens_.items():
         for token in tokens:
             df[token] = df[name].apply(lambda x: 1 if token in str(x) else 0)
@@ -44,11 +41,12 @@ def data_process(df):
         report_time = datetime.strptime(t, '%B %d, %Y %H:%M:%S')
         minute = int(report_time.strftime('%H')) * 60 \
             + int(report_time.strftime('%M'))
-        if minute <= threshold['sleep'][1]:
-            minute += 1440  # minutes
-            report_time += timedelta(days=-1)  # regard as the previous day
+        if minute >= threshold['sleep'][0]:
+            minute -= 1440
+            report_time += timedelta(days=1)  # regard as the next day
+        elif minute >= threshold['wake'][0]:
+            minute -= 1440
         return pd.Series([minute, report_time.strftime('%B %d, %Y')])
-
     df[['Minute', 'Date']] = df['Time'].apply(time_to_minute)
 
     # merge the two reports (in a single day) into one line
@@ -75,14 +73,14 @@ def data_process(df):
         :param hours: supported hours, sorted in ascending order
         :return: int
         """
-        h = (t[1] - t[0]) / 60  # sleep duration in hours
+        h = abs(t[1] - t[0]) / 60  # sleep duration in hours
         return list(filter(lambda x: x <= h, hours))[-1]
     # the former one
-    new_df['Wake'] = new_df['Minute']\
+    new_df['Sleep'] = new_df['Minute']\
         .apply(lambda x: -int(search(r'(.*)\|.*', x).groups()[0]))
     # the latter one
-    new_df['Sleep'] = new_df['Minute']\
-        .apply(lambda x: 1440 - int(search(r'.*\|(.*)', x).groups()[0]))
+    new_df['Wake'] = new_df['Minute']\
+        .apply(lambda x: -1440 - int(search(r'.*\|(.*)', x).groups()[0]))
     new_df['Sleep_duration'] = new_df[['Wake', 'Sleep']].apply(duration, axis=1)
     del new_df['Minute']
 
